@@ -21,7 +21,8 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API Routes
-app.use('/api/auth', require('./routes/auth')); // <--- ADDED THIS LINE HERE
+app.use('/api/auth', require('./routes/auth')); 
+app.use('/api/items', require('./routes/items')); 
 
 // Health Check Endpoint
 app.get('/api/health', async (req, res) => {
