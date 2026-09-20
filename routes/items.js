@@ -4,6 +4,30 @@ const { pool } = require('../config/db');
 const verifyToken = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload'); // <--- Import multer middleware
 
+// GET A SINGLE ITEM BY ID (Public Route for Product Detail Views)
+router.get('/:id', async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    
+    const item = await pool.query(`
+      SELECT i.*, c.name as category_name, u.full_name as seller_name, u.whatsapp_number, u.email as seller_email
+      FROM items i
+      JOIN categories c ON i.category_id = c.id
+      JOIN users u ON i.seller_id = u.id
+      WHERE i.id = $1 AND i.is_deleted = FALSE
+    `, [itemId]);
+
+    if (item.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    res.json(item.rows[0]);
+  } catch (err) {
+    console.error('Fetch Single Item Error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET ALL ACTIVE ITEMS (Public Marketplace Feed)
 router.get('/', async (req, res) => {
   try {
