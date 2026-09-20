@@ -70,6 +70,71 @@ router.post('/', verifyToken, upload.single('image'), async (req, res) => {
   }
 });
 
+// UPDATE AN ITEM (Protected Route - Seller Only)
+router.put('/:id', verifyToken, upload.single('image'), async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const userId = req.user.id;
+
+    const itemCheck = await pool.query('SELECT * FROM items WHERE id = $1', [itemId]);
+    if (itemCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    if (itemCheck.rows[0].seller_id !== userId) {
+      return res.status(403).json({ error: 'Unauthorized: You can only update your own items' });
+    }
+
+    const { 
+      title, 
+      description, 
+      price_mur, 
+      item_condition, 
+      campus_location, 
+      category_id,
+      status 
+    } = req.body;
+
+    const currentItem = itemCheck.rows[0];
+    const updatedTitle = title || currentItem.title;
+    const updatedDescription = description || currentItem.description;
+    const updatedPrice = price_mur || currentItem.price_mur;
+    const updatedCondition = item_condition || currentItem.item_condition;
+    const updatedLocation = campus_location || currentItem.campus_location;
+    const updatedCategory = category_id || currentItem.category_id;
+    const updatedStatus = status || currentItem.status;
+
+    const image_url = req.file ? `/uploads/${req.file.filename}` : currentItem.image_url;
+
+    const updatedItem = await pool.query(
+      `UPDATE items 
+       SET title = $1, description = $2, price_mur = $3, item_condition = $4, 
+           image_url = $5, campus_location = $6, category_id = $7, status = $8 
+       WHERE id = $9 
+       RETURNING *`,
+      [
+        updatedTitle, 
+        updatedDescription, 
+        updatedPrice, 
+        updatedCondition, 
+        image_url, 
+        updatedLocation, 
+        updatedCategory, 
+        updatedStatus, 
+        itemId
+      ]
+    );
+
+    res.json({
+      message: 'Item updated successfully',
+      item: updatedItem.rows[0]
+    });
+  } catch (err) {
+    console.error('Update Item Error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // SOFT DELETE AN ITEM (Protected Route - Seller Only)
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
@@ -78,7 +143,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     const itemCheck = await pool.query('SELECT * FROM items WHERE id = $1', [itemId]);
     
-    if (itemCheck.rows.length ===0) {
+    if (itemCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
