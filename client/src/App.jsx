@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import ItemCard from './components/ItemCard';
 import ItemDetailModal from './components/ItemDetailModal';
+import PostItemModal from './components/PostItemModal';
 import API from './services/api';
 
 const MOCK_ITEMS = [
@@ -14,7 +15,8 @@ const MOCK_ITEMS = [
     location: 'Pamplemousses Campus',
     seller_name: 'Deborah',
     seller_email: 'deborah@alche.ac.mu',
-    image_url: ''
+    image_url: '',
+    created_at: '2026-10-02T10:00:00Z',
   },
   {
     id: 2,
@@ -25,7 +27,8 @@ const MOCK_ITEMS = [
     location: 'Dorm Block B',
     seller_name: 'Deborah',
     seller_email: 'deborah@alche.ac.mu',
-    image_url: ''
+    image_url: '',
+    created_at: '2026-10-02T14:30:00Z',
   },
   {
     id: 3,
@@ -36,7 +39,8 @@ const MOCK_ITEMS = [
     location: 'Pamplemousses',
     seller_name: 'Student Seller',
     seller_email: 'seller@alche.ac.mu',
-    image_url: ''
+    image_url: '',
+    created_at: '2026-10-01T09:15:00Z',
   }
 ];
 
@@ -45,6 +49,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -64,6 +69,10 @@ export default function App() {
     fetchItems();
   }, []);
 
+  const handleItemCreated = (newItem) => {
+    setItems((prev) => [newItem, ...prev]);
+  };
+
   const filteredItems = items.filter((item) =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -73,7 +82,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
       <Navbar
         onSearch={(query) => setSearchQuery(query)}
-        onOpenPostModal={() => alert('Post Item Modal - Coming on Day 13!')}
+        onOpenPostModal={() => setIsPostModalOpen(true)}
         onOpenAuthModal={(mode) => alert(`Auth Modal (${mode}) - Coming on Day 15!`)}
       />
 
@@ -127,6 +136,13 @@ export default function App() {
       <ItemDetailModal
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+      />
+
+      {/* Post Item Modal */}
+      <PostItemModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+        onItemCreated={handleItemCreated}
       />
     </div>
   );
