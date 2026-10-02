@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import ItemCard from './components/ItemCard';
 import ItemDetailModal from './components/ItemDetailModal';
 import PostItemModal from './components/PostItemModal';
+import AuthPromptModal from './components/AuthPromptModal';
 import API from './services/api';
 
 const MOCK_ITEMS = [
@@ -14,7 +15,7 @@ const MOCK_ITEMS = [
     description: 'Heavy-bottom tri-ply pan perfect for daily cooking, uniform heat distribution. Includes glass lid.',
     location: 'Pamplemousses Campus',
     seller_name: 'Deborah',
-    seller_email: 'deborah@alche.ac.mu',
+    seller_email: 'd.russellab@alustudent.com',
     image_url: '',
     created_at: '2026-10-02T10:00:00Z',
   },
@@ -26,7 +27,7 @@ const MOCK_ITEMS = [
     description: 'Includes glass jug and dual dry mills for smoothie prep and grain milling. Excellent condition.',
     location: 'Dorm Block B',
     seller_name: 'Deborah',
-    seller_email: 'deborah@alche.ac.mu',
+    seller_email: 'd.russellab@alustudent.com',
     image_url: '',
     created_at: '2026-10-02T14:30:00Z',
   },
@@ -38,7 +39,7 @@ const MOCK_ITEMS = [
     description: 'Adjustable height and arch support, perfect for long study sessions.',
     location: 'Pamplemousses',
     seller_name: 'Student Seller',
-    seller_email: 'seller@alche.ac.mu',
+    seller_email: 'seller@alustudent.com',
     image_url: '',
     created_at: '2026-10-01T09:15:00Z',
   }
@@ -49,7 +50,13 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Authentication State
+  const [user, setUser] = useState(null); // Default to guest null; set object when logged in
+
+  // Modal Control States
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -73,6 +80,18 @@ export default function App() {
     setItems((prev) => [newItem, ...prev]);
   };
 
+  const handleOpenAuthModal = (mode) => {
+    if (mode === 'prompt') {
+      setIsAuthPromptOpen(true);
+    } else {
+      alert(`Auth Modal (${mode}) - Coming soon! Use student email @alustudent.com`);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
   const filteredItems = items.filter((item) =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -81,9 +100,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
       <Navbar
+        user={user}
+        onLogout={handleLogout}
         onSearch={(query) => setSearchQuery(query)}
         onOpenPostModal={() => setIsPostModalOpen(true)}
-        onOpenAuthModal={(mode) => alert(`Auth Modal (${mode}) - Coming on Day 15!`)}
+        onOpenAuthModal={handleOpenAuthModal}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -132,17 +153,23 @@ export default function App() {
         </div>
       </main>
 
-      {/* Item Detail Modal */}
+      {/* Modals */}
       <ItemDetailModal
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
       />
 
-      {/* Post Item Modal */}
       <PostItemModal
         isOpen={isPostModalOpen}
         onClose={() => setIsPostModalOpen(false)}
         onItemCreated={handleItemCreated}
+      />
+
+      <AuthPromptModal
+        isOpen={isAuthPromptOpen}
+        onClose={() => setIsAuthPromptOpen(false)}
+        onOpenLogin={() => handleOpenAuthModal('login')}
+        onOpenRegister={() => handleOpenAuthModal('register')}
       />
     </div>
   );

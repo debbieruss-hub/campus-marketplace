@@ -18,11 +18,11 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
     category: 'Kitchenware',
     location: 'Pamplemousses Campus',
     description: '',
-    image_url: '',
     seller_name: 'Deborah',
     seller_email: 'deborah@alche.ac.mu',
   });
 
+  const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -55,9 +55,8 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
       newErrors.location = 'Campus location is required';
     }
 
-    // Required image validation
-    if (!formData.image_url) {
-      newErrors.image_url = 'Item photo is required';
+    if (!selectedFile) {
+      newErrors.image = 'Item photo is required';
     }
 
     setErrors(newErrors);
@@ -75,45 +74,59 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setFormData((prev) => ({ ...prev, image_url: reader.result }));
-        if (errors.image_url) {
-          setErrors((prev) => ({ ...prev, image_url: null }));
-        }
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      if (errors.image) {
+        setErrors((prev) => ({ ...prev, image: null }));
+      }
     }
   };
 
   const handleRemoveImage = () => {
+    setSelectedFile(null);
     setImagePreview(null);
-    setFormData((prev) => ({ ...prev, image_url: '' }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) return;
 
     setSubmitting(true);
 
-    setTimeout(() => {
-      const newItem = {
-        id: Date.now(),
-        ...formData,
-        price: Number(formData.price),
-        created_at: new Date().toISOString(),
-      };
+    try {
+      const data = new FormData();
+      data.append('title', formData.title);
+      data.append('price', formData.price);
+      data.append('category', formData.category);
+      data.append('location', formData.location);
+      data.append('description', formData.description);
+      data.append('seller_name', formData.seller_name);
+      data.append('seller_email', formData.seller_email);
+      data.append('image', selectedFile); // Key matches Multer upload.single('image')
 
-      onItemCreated(newItem);
+      const response = await fetch('http://localhost:5000/api/items', {
+        method: 'POST',
+        body: data, // Browser automatically formats multipart/form-data boundary
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        onItemCreated(result.data);
+        handleResetAndClose();
+      } else {
+        alert(result.message || 'Failed to post item.');
+      }
+    } catch (err) {
+      console.error('Error posting item:', err);
+      alert('Unable to connect to backend server.');
+    } finally {
       setSubmitting(false);
-      handleResetAndClose();
-    }, 600);
+    }
   };
 
   const handleResetAndClose = () => {
@@ -123,10 +136,10 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
       category: 'Kitchenware',
       location: 'Pamplemousses Campus',
       description: '',
-      image_url: '',
       seller_name: 'Deborah',
-      seller_email: 'deborah@alche.ac.mu',
+      seller_email: 'd.russellab@alustudent.com',
     });
+    setSelectedFile(null);
     setImagePreview(null);
     setErrors({});
     onClose();
@@ -281,7 +294,7 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
             <label className="block text-xs font-semibold text-gray-700 mb-1">
               Item Photo *
             </label>
-            
+
             <input
               type="file"
               ref={fileInputRef}
@@ -310,21 +323,21 @@ export default function PostItemModal({ isOpen, onClose, onItemCreated }) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={`w-full h-28 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                  errors.image_url
+                  errors.image
                     ? 'border-brand-accent bg-red-50/30 text-brand-accent'
                     : 'border-gray-200 hover:border-brand-primary/50 bg-gray-50/50 hover:bg-brand-surface/40 text-gray-500'
                 }`}
               >
-                <Upload className={`w-5 h-5 ${errors.image_url ? 'text-brand-accent' : 'text-gray-400'}`} />
+                <Upload className={`w-5 h-5 ${errors.image ? 'text-brand-accent' : 'text-gray-400'}`} />
                 <span className="text-xs font-medium">Upload photo from your device</span>
                 <span className="text-[10px] opacity-75">PNG, JPG, or WEBP</span>
               </button>
             )}
 
-            {errors.image_url && (
+            {errors.image && (
               <p className="flex items-center gap-1 text-xs text-brand-accent mt-1">
                 <AlertCircle className="w-3.5 h-3.5" />
-                {errors.image_url}
+                {errors.image}
               </p>
             )}
           </div>
